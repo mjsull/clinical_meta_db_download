@@ -13,8 +13,8 @@ rule get_gtdb_taxfiles:
         ar53_tax = "phylo/ar53_taxonomy.tsv.gz",
         bac120_tax = "phylo/bac120_taxonomy.tsv.gz"
     shell:
-        "wget -o {ouput.ar53_tax} https://data.gtdb.ecogenomic.org/releases/release214/214.1/ar53_taxonomy_r214.tsv.gz && " 
-        "wget -o {ouput.bac120_tax} https://data.gtdb.ecogenomic.org/releases/release214/214.1/bac120_taxonomy_r214.tsv.gz"
+        "wget -o {output.ar53_tax} https://data.gtdb.ecogenomic.org/releases/release214/214.1/ar53_taxonomy_r214.tsv.gz && " 
+        "wget -o {output.bac120_tax} https://data.gtdb.ecogenomic.org/releases/release214/214.1/bac120_taxonomy_r214.tsv.gz"
 
 rule download_gtdb:
     input:
