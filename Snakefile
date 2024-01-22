@@ -20,8 +20,6 @@ rule split_gtdb_accessions:
     input:
         ar53_tax = "phylo/ar53_taxonomy.tsv.gz",
         bac120_tax = "phylo/bac120_taxonomy.tsv.gz"
-    params:
-        datasets_binary = config["datasets_binary"]
     output:
         accession_list = "data/gtdb_accessions",
         gtdb_list = expand("data/gtdb.{num}.list", num=["{:02d}".format(x) for x in range(50)])
@@ -33,6 +31,8 @@ rule split_gtdb_accessions:
 rule download_gtdb:
     input:
         gtdb_list =  "data/gtdb.{num}.list"
+    params:
+        datasets_binary = config["datasets_binary"]
     output:
         ncbi_file = "data/ncbi_file.{num}.zip"
     shell:
