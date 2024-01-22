@@ -27,7 +27,7 @@ rule download_gtdb:
         ncbi_file = "data/ncbi_dataset.zip"
     shell:
         "zcat {input.ar53_tax} {input.bac120_tax} | awk -F'\t' '{{print substr($1, 4); }}' > {output.accession_list} && "
-        "{params.datasets_binary} download genome accession --filename {output.accession_list} --include genome,gff3 --inputfile {output.accession_list}"
+        "{params.datasets_binary} download genome accession --filename {output.ncbi_file} --include genome,gff3 --inputfile {output.accession_list}"
 
 
 rule download_virosaurus:
