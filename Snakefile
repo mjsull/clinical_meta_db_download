@@ -24,7 +24,7 @@ rule split_gtdb_accessions:
         datasets_binary = config["datasets_binary"]
     output:
         accession_list = "data/gtdb_accessions",
-        gtdb_list = "data/gtdb.{num}.list"
+        gtdb_list = expand("data/gtdb.{num}.list", num=["{:02d}".format(x) for x in range(50)])
     shell:
         "zcat {input.ar53_tax} {input.bac120_tax} | awk -F'\t' '{{print substr($1, 4); }}' > {output.accession_list} && "
         "split -n l/50 -d --additional-suffix=.list data/gtdb_accessions data/gtdb."
@@ -40,7 +40,7 @@ rule download_gtdb:
 
 rule list_ncbi_zip_files:
     input:
-        ncbi_file = expand(ncbi_file = "data/ncbi_file.{num}.zip", num=["{:02d}".format(x) for x in range(50)])
+        ncbi_file = expand("data/ncbi_file.{num}.zip", num=["{:02d}".format(x) for x in range(50)])
     output:
         zipfile_list = "data/all_ncbi_zipfiles.fofn"
     run:
