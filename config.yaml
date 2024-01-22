@@ -1,2 +1,4 @@
 gtdb_release:
   r214
+datasets_binary:
+  ~/apps/datasets
