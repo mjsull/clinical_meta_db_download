@@ -27,7 +27,7 @@ rule split_gtdb_accessions:
         gtdb_list = "data/gtdb.{num}.list"
     shell:
         "zcat {input.ar53_tax} {input.bac120_tax} | awk -F'\t' '{{print substr($1, 4); }}' > {output.accession_list} && "
-        "split -l 10000 -d --additional-suffix=.list data/gtdb_accessions data/gtdb."
+        "split -n l/50 -d --additional-suffix=.list data/gtdb_accessions data/gtdb."
 
 
 rule download_gtdb:
@@ -37,6 +37,28 @@ rule download_gtdb:
         ncbi_file = "data/ncbi_file.{num}.zip"
     shell:
         "{params.datasets_binary} download genome accession --filename {output.ncbi_file} --include genome,gff3 --inputfile {input.gtdb_list}"
+
+rule list_ncbi_zip_files:
+    input:
+        ncbi_file = expand(ncbi_file = "data/ncbi_file.{num}.zip", num=["{:02d}".format(x) for x in range(50)])
+    output:
+        zipfile_list = "data/all_ncbi_zipfiles.fofn"
+    run:
+        with open(output.zipfile_list, 'w') as o:
+            for num in ["{:02d}".format(x) for x in range(50)]:
+                o.write("data/ncbi_file.{num}.zip\n".format(num))
+
+rule unzip_ncbi:
+    input:
+        zipfile_list = "data/all_ncbi_zipfiles.fofn"
+    output:
+        gtdb_fasta_fofn = "data/gtdb_fasta.fofn",
+        gtdb_gff_fofn = "data/gtdb_gff.fofn"
+    shell:
+        "cat {input.zipfile_list} | while read line; do unzip $line; done && ls ncbi_file*/data/*/*.fna > {output.gtdb_fasta_fofn} && ls ncbi_file*/data/*/*.gff3 > {output.gtdb_gff_fofn}"
+
+
+
 
 
 rule download_virosaurus:
