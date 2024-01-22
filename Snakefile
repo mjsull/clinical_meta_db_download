@@ -16,7 +16,7 @@ rule get_gtdb_taxfiles:
         "wget -O {output.ar53_tax} https://data.gtdb.ecogenomic.org/releases/release214/214.1/ar53_taxonomy_r214.tsv.gz && " 
         "wget -O {output.bac120_tax} https://data.gtdb.ecogenomic.org/releases/release214/214.1/bac120_taxonomy_r214.tsv.gz"
 
-rule download_gtdb:
+rule split_gtdb_accessions:
     input:
         ar53_tax = "phylo/ar53_taxonomy.tsv.gz",
         bac120_tax = "phylo/bac120_taxonomy.tsv.gz"
@@ -24,10 +24,19 @@ rule download_gtdb:
         datasets_binary = config["datasets_binary"]
     output:
         accession_list = "data/gtdb_accessions",
-        ncbi_file = "data/ncbi_dataset.zip"
+        gtdb_list = "data/gtdb.{num}.list"
     shell:
         "zcat {input.ar53_tax} {input.bac120_tax} | awk -F'\t' '{{print substr($1, 4); }}' > {output.accession_list} && "
-        "{params.datasets_binary} download genome accession --filename {output.ncbi_file} --include genome,gff3 --inputfile {output.accession_list}"
+        "split -l 10000 -d --additional-suffix=.list data/gtdb_accessions data/gtdb."
+
+
+rule download_gtdb:
+    input:
+        gtdb_list =  "data/gtdb.{num}.list"
+    output:
+        ncbi_file = "data/ncbi_file.{num}.zip"
+    shell:
+        "{params.datasets_binary} download genome accession --filename {output.ncbi_file} --include genome,gff3 --inputfile {input.gtdb_list}"
 
 
 rule download_virosaurus:
