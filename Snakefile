@@ -38,24 +38,46 @@ rule download_gtdb:
     shell:
         "{params.datasets_binary} download genome accession --filename {output.ncbi_file} --include genome,gff3 --inputfile {input.gtdb_list}"
 
-rule list_ncbi_zip_files:
-    input:
-        ncbi_file = expand("data/ncbi_file.{num}.zip", num=["{:02d}".format(x) for x in range(50)])
-    output:
-        zipfile_list = "data/all_ncbi_zipfiles.fofn"
-    run:
-        with open(output.zipfile_list, 'w') as o:
-            for num in ["{:02d}".format(x) for x in range(50)]:
-                o.write("data/ncbi_file.{num}.zip\n".format(num))
 
 rule unzip_ncbi:
     input:
-        zipfile_list = "data/all_ncbi_zipfiles.fofn"
+        gtdb_list =  expand("data/gtdb.{num}.list", num=["{:02d}".format(x) for x in range(50)]),
+        ncbi_file = expand("data/ncbi_file.{num}.zip", num=["{:02d}".format(x) for x in range(50)])
     output:
-        gtdb_fasta_fofn = "data/gtdb_fasta.fofn",
-        gtdb_gff_fofn = "data/gtdb_gff.fofn"
-    shell:
-        "cat {input.zipfile_list} | while read line; do unzip $line; done && ls ncbi_file*/data/*/*.fna > {output.gtdb_fasta_fofn} && ls ncbi_file*/data/*/*.gff3 > {output.gtdb_gff_fofn}"
+        gtdb_fasta_fofn = "data/gtdb_fasta.list",
+        gtdb_gff_fofn = "data/gtdb_gff.list"
+    run:
+        import glob, sys, os
+        with open(output.gtdb_fasta_fofn,'w') as fo, open(output.gtdb_gff_fofnt,'w') as go:
+            for i, j in zip(input.ncbi_file, input.gtdb_list):
+                shell("unzip -o {0} && rm {0}".format(i))
+                with open(j) as f:
+                    for line in f:
+                        accession = line.rstrip()
+                        fastas = glob.glob("data/ncbi_dataset/data/{}/*_genomic.fna".format(accession))
+                        if len(fastas) == 1:
+                            fasta = fastas[0]
+                        else:
+                            sys.stderr.write("More than one fasta file found for accession.")
+                            sys.exit()
+                        if os.path.exists("data/ncbi_file.{:02d}/{}/genomic.gff".format(accession)):
+                            gff = "data/ncbi_file.{:02d}/{}/genomic.gff".format(accession)
+                        else:
+                            gff = None
+                        shell("gzip {}".format(fasta))
+                        fo.write("{}\t{}.gz\n".format(accession, fasta))
+                        if not gff is None:
+                            shell("gzip {}".format(gff))
+                            go.write("{}\t{}.gz\n".format(accession, gff))
+
+rule deduplicate:
+    input:
+        gtdb_fasta_fofn = "data/gtdb_fasta.list",
+        gtdb_gff_fofn = "data/gtdb_gff.list",
+        ar53_tax = "phylo/ar53_taxonomy.tsv.gz",
+        bac120_tax = "phylo/bac120_taxonomy.tsv.gz"
+    output:
+        deduplicate_list = "data/gtdb_deduplicated_fastas.list"
 
 
 
@@ -79,7 +101,7 @@ rule get_eupathdb_genomes:
     params:
         "data/veupathdb_summary.txt"
     output:
-        "genomes/eupathdb/fofn"
+        "genomes/eupathdb.fofn"
 
 
 
