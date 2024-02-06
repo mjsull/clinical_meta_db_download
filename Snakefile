@@ -47,10 +47,10 @@ rule unzip_ncbi:
         gtdb_fasta_fofn = "data/gtdb_fasta.list",
         gtdb_gff_fofn = "data/gtdb_gff.list"
     run:
-        import glob, sys, os
+        import glob, sys, os, subprocess
         with open(output.gtdb_fasta_fofn,'w') as fo, open(output.gtdb_gff_fofn,'w') as go:
             for i, j in zip(input.ncbi_file, input.gtdb_list):
-                shell("unzip -o {0} -d data/".format(i))
+                subprocess.Popen("unzip -o {0} -d data/".format(i), shell=True).wait()
                 with open(j) as f:
                     for line in f:
                         accession = line.rstrip()
