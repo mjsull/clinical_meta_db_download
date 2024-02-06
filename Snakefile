@@ -48,7 +48,7 @@ rule unzip_ncbi:
         gtdb_gff_fofn = "data/gtdb_gff.list"
     run:
         import glob, sys, os
-        with open(output.gtdb_fasta_fofn,'w') as fo, open(output.gtdb_gff,'w') as go:
+        with open(output.gtdb_fasta_fofn,'w') as fo, open(output.gtdb_gff_fofn,'w') as go:
             for i, j in zip(input.ncbi_file, input.gtdb_list):
                 shell("unzip -o {0} && rm {0}".format(i))
                 with open(j) as f:
