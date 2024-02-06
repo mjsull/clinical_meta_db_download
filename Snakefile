@@ -66,11 +66,9 @@ rule unzip_ncbi:
                             gff = "data/ncbi_dataset/data/{}/genomic.gff".format(accession)
                         else:
                             gff = None
-                        shell("gzip {}".format(fasta))
-                        fo.write("{}\t{}.gz\n".format(accession, fasta))
+                        fo.write("{}\t{}\n".format(accession, fasta))
                         if not gff is None:
-                            shell("gzip {}".format(gff))
-                            go.write("{}\t{}.gz\n".format(accession, gff))
+                            go.write("{}\t{}\n".format(accession, gff))
 
 rule deduplicate:
     input:
