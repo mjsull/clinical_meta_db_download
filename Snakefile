@@ -50,7 +50,7 @@ rule unzip_ncbi:
         import glob, sys, os, subprocess
         with open(output.gtdb_fasta_fofn,'w') as fo, open(output.gtdb_gff_fofn,'w') as go:
             for i, j in zip(input.ncbi_file, input.gtdb_list):
-                subprocess.Popen("unzip -o {0} -d data/".format(i), shell=True).wait()
+                subprocess.Popen("unzip -o {} -d data/".format(i), shell=True).wait()
                 with open(j) as f:
                     for line in f:
                         accession = line.rstrip()
@@ -60,8 +60,8 @@ rule unzip_ncbi:
                         else:
                             sys.stderr.write("More than one fasta file found for accession.")
                             sys.exit()
-                        if os.path.exists("data/ncbi_file.{:02d}/{}/genomic.gff".format(accession)):
-                            gff = "data/ncbi_file.{:02d}/{}/genomic.gff".format(accession)
+                        if os.path.exists("data/ncbi_dataset/data/{}/genomic.gff".format(accession)):
+                            gff = "data/ncbi_dataset/data/{}/genomic.gff".format(accession)
                         else:
                             gff = None
                         shell("gzip {}".format(fasta))
