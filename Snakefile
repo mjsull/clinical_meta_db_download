@@ -58,7 +58,7 @@ rule unzip_ncbi:
                         if len(fastas) == 1:
                             fasta = fastas[0]
                         else:
-                            sys.stderr.write("More than one fasta file found for accession.")
+                            sys.stderr.write("More than one fasta file found for accession {}.".format(accession))
                             sys.exit()
                         if os.path.exists("data/ncbi_dataset/data/{}/genomic.gff".format(accession)):
                             gff = "data/ncbi_dataset/data/{}/genomic.gff".format(accession)
