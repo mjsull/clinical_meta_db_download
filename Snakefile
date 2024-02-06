@@ -55,7 +55,9 @@ rule unzip_ncbi:
                     for line in f:
                         accession = line.rstrip()
                         fastas = glob.glob("data/ncbi_dataset/data/{}/*_genomic.fna".format(accession))
-                        if len(fastas) == 1:
+                        if len(fasta) == 0:
+                            continue
+                        elif len(fastas) == 1:
                             fasta = fastas[0]
                         else:
                             sys.stderr.write("More than one fasta file found for accession {}.".format(accession))
