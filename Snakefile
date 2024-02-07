@@ -70,32 +70,80 @@ rule unzip_ncbi:
                         if not gff is None:
                             go.write("{}\t{}\n".format(accession, gff))
 
-rule deduplicate:
-    input:
-        gtdb_fasta_fofn = "data/gtdb_fasta.list",
-        gtdb_gff_fofn = "data/gtdb_gff.list",
-        ar53_tax = "phylo/ar53_taxonomy.tsv.gz",
-        bac120_tax = "phylo/bac120_taxonomy.tsv.gz"
+
+rule donwload_eupathdb:
+    params:
+         eupath_file =  workflow.source_path("data/veupathdb_summary.txt")
     output:
-        deduplicate_list = "data/gtdb_deduplicated_fastas.list"
-
-
-
+         eupath_list = "data/eupath.list"
+    run:
+        with open(params.eupath_file) as f, open(output.eupath_list, 'w') as o:
+            f.readline()
+            for line in f:
+                splitline = line.rstrip().split("\t")
+                gff, accession, fasta, taxid = splitline[0], splitline[7], splitline[14], splitline[17]
+                shell("wget -o data/eupath_gffs/{}.gff {}".format(accession, gff))
+                shell("wget -o data/eupath_fastas/{}.fasta {}".format(accession, fasta))
+                o.write("{}\t{}\t{}\t{}\n".format(accession, taxid, "data/eupath_fastas/{}.fasta", "data/eupath_gffs/{}.gff"))
 
 
 rule download_virosaurus:
     output:
-        virosaurus_fasta = "genomes/virosaurus.fasta"
+        virosaurus_fasta = "genomes/virosaurus.fasta.gz"
     shell:
         "wget -o {output.virosaurus_fasta} https://viralzone.expasy.org/resources/Virosaurus/2020%5F4/virosaurus98%5Fvertebrate-20200330.fas.gz"
 
+rule download_ncbi_tax:
+    output:
+        nodes = "phylo/nodes.dmp",
+        names = "phylo/names.dmp"
+    shell:
+        "wget -o phylo/taxdump.tar.gz https://ftp.ncbi.nlm.nih.gov/pub/taxonomy/taxdump.tar.gz && "
+        "tar -C phylo/ -xzvf phylo/taxdump.tar.gz"
+
 rule create_virus_taxfile:
     input:
-        virosaurus_fasta = "genomes/virosaurus"
+        virosaurus_fasta = "genomes/virosaurus.fasta.gz"
+    params:
+        dataset = "virosaurus"
     output:
         virus_tax = "phylo/virus_taxonomy.tsv.gz"
     script:
-        "scripts/create_virosaurus_tax.py"
+        "scripts/create_tax.py"
+
+rule create_euk_taxfile:
+    input:
+        virosaurus_fasta = "data/eupath.list"
+    params:
+        dataset = "euk"
+    output:
+        virus_tax = "phylo/euk_taxonomy.tsv.gz"
+    script:
+        "scripts/create_tax.py"
+
+
+rule deduplicate:
+    input:
+        gtdb_fasta_fofn = "data/gtdb_fasta.list",
+        ar53_tax = "phylo/ar53_taxonomy.tsv.gz",
+        bac120_tax = "phylo/bac120_taxonomy.tsv.gz"
+    output:
+        deduplicate_list = "data/gtdb_deduplicated_fastas.list"
+    run:
+        import gzip
+        with gzip.open(input.ar53_tax, 'rt') as f:
+            for line in f:
+                accession, tax = line.rstrip().split("\t")
+                species_dict[tax] = accession[3:]
+
+
+
+
+
+
+
+
+
 
 rule get_eupathdb_genomes:
     params:
