@@ -71,7 +71,7 @@ rule unzip_ncbi:
                             go.write("{}\t{}\n".format(accession, gff))
 
 
-rule donwload_eupathdb:
+rule download_eupathdb:
     params:
          eupath_file =  workflow.source_path("data/veupathdb_summary.txt")
     output:
@@ -82,6 +82,7 @@ rule donwload_eupathdb:
             for line in f:
                 splitline = line.rstrip().split("\t")
                 gff, accession, fasta, taxid = splitline[0], splitline[7], splitline[14], splitline[17]
+                shell("mkdir -p data/eupath_gffs && mkdir -p data/eupath_fastas")
                 shell("wget -o data/eupath_gffs/{}.gff {}".format(accession, gff))
                 shell("wget -o data/eupath_fastas/{}.fasta {}".format(accession, fasta))
                 o.write("{}\t{}\t{}\t{}\n".format(accession, taxid, "data/eupath_fastas/{}.fasta", "data/eupath_gffs/{}.gff"))
