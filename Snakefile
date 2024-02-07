@@ -83,9 +83,17 @@ rule download_eupathdb:
                 splitline = line.rstrip().split("\t")
                 gff, accession, taxid, fasta = splitline[0], splitline[7], splitline[14], splitline[17]
                 shell("mkdir -p data/eupath_gffs && mkdir -p data/eupath_fastas")
-                shell("wget -O data/eupath_gffs/{}.gff {}".format(accession, gff))
-                shell("wget -O data/eupath_fastas/{}.fna {}".format(accession, fasta))
-                o.write("{}\t{}\t{}\t{}\n".format(accession, taxid, "data/eupath_fastas/{}.fasta", "data/eupath_gffs/{}.gff"))
+                try:
+                    gff_out = "data/eupath_fastas/{}.gff".format(accession)
+                    shell("wget -O {} {}".format(gff_out, gff))
+                except:
+                    gff_out = "none"
+                try:
+                    fasta_out = "data/eupath_fastas/{}.fna".format(accession)
+                    shell("wget -O {} {}".format(fasta_out, fasta))
+                except:
+                    fasta_out = "none"
+                o.write("{}\t{}\t{}\t{}\n".format(accession, taxid, fasta_out, gff_out))
 
 
 rule download_virosaurus:
