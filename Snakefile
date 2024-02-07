@@ -81,7 +81,7 @@ rule download_eupathdb:
             f.readline()
             for line in f:
                 splitline = line.rstrip().split("\t")
-                gff, accession, fasta, taxid = splitline[0], splitline[7], splitline[14], splitline[17]
+                gff, accession, taxid, fasta = splitline[0], splitline[7], splitline[14], splitline[17]
                 shell("mkdir -p data/eupath_gffs && mkdir -p data/eupath_fastas")
                 shell("wget -o data/eupath_gffs/{}.gff {}".format(accession, gff))
                 shell("wget -o data/eupath_fastas/{}.fasta {}".format(accession, fasta))
