@@ -84,7 +84,7 @@ rule download_eupathdb:
                 gff, accession, taxid, fasta = splitline[0], splitline[7], splitline[14], splitline[17]
                 shell("mkdir -p data/eupath_gffs && mkdir -p data/eupath_fastas")
                 shell("wget -O data/eupath_gffs/{}.gff {}".format(accession, gff))
-                shell("wget -O data/eupath_fastas/{}.fasta {}".format(accession, fasta))
+                shell("wget -O data/eupath_fastas/{}.fna {}".format(accession, fasta))
                 o.write("{}\t{}\t{}\t{}\n".format(accession, taxid, "data/eupath_fastas/{}.fasta", "data/eupath_gffs/{}.gff"))
 
 
