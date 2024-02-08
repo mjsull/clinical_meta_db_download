@@ -83,7 +83,7 @@ def process_euk(infile, outfile):
 
 graph, name_dict, prefix_dict = create_tax_ref(snakemake.input.nodes, snakemake.input.names)
 
-if params.dataset == "virosaurus":
+if snakemake.params.dataset == "virosaurus":
     process_virus(snakemake.input.virosaurus_fasta, "data/virus_tenomes", snakemake.output.virus_tax)
-elif params.dataset == "euk":
+elif snakemake.params.dataset == "euk":
     process_euk(snakemake.input.euk_list, snakemake.output.euk_tax)
