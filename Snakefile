@@ -100,7 +100,7 @@ rule download_virosaurus:
     output:
         virosaurus_fasta = "genomes/virosaurus.fasta.gz"
     shell:
-        "wget -o {output.virosaurus_fasta} https://viralzone.expasy.org/resources/Virosaurus/2020%5F4/virosaurus98%5Fvertebrate-20200330.fas.gz"
+        "wget -O {output.virosaurus_fasta} https://viralzone.expasy.org/resources/Virosaurus/2020%5F4/virosaurus98%5Fvertebrate-20200330.fas.gz"
 
 rule download_ncbi_tax:
     output:
