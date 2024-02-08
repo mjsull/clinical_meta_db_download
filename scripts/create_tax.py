@@ -81,9 +81,9 @@ def process_euk(infile, outfile):
             outfile.write("{}\t{}\n".format(accession, get_phylo_name(taxid)))
 
 
-graph, name_dict, prefix_dict = create_tax_ref(input.nodes, input.names)
+graph, name_dict, prefix_dict = create_tax_ref(snakemake.input.nodes, snakemake.input.names)
 
 if params.dataset == "virosaurus":
-    process_virus(input.virosaurus_fasta, "data/virus_tenomes", output.virus_tax)
+    process_virus(snakemake.input.virosaurus_fasta, "data/virus_tenomes", snakemake.output.virus_tax)
 elif params.dataset == "euk":
-    process_euk(input.euk_list, output.euk_tax)
+    process_euk(snakemake.input.euk_list, snakemake.output.euk_tax)
