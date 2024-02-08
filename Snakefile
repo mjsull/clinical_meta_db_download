@@ -116,17 +116,17 @@ rule create_virus_taxfile:
     params:
         dataset = "virosaurus"
     output:
-        virus_tax = "phylo/virus_taxonomy.tsv.gz"
+        virus_tax = "phylo/virus_taxonomy.tsv"
     script:
         "scripts/create_tax.py"
 
 rule create_euk_taxfile:
     input:
-        virosaurus_fasta = "data/eupath.list"
+        euk_list = "data/eupath.list"
     params:
         dataset = "euk"
     output:
-        virus_tax = "phylo/euk_taxonomy.tsv.gz"
+        euk_tax = "phylo/euk_taxonomy.tsv"
     script:
         "scripts/create_tax.py"
 
@@ -135,22 +135,15 @@ rule deduplicate:
     input:
         gtdb_fasta_fofn = "data/gtdb_fasta.list",
         ar53_tax = "phylo/ar53_taxonomy.tsv.gz",
-        bac120_tax = "phylo/bac120_taxonomy.tsv.gz"
+        bac120_tax = "phylo/bac120_taxonomy.tsv.gz",
+        euk_tax = "phylo/euk_taxonomy.tsv",
+        euk_list= "data/eupath.list"
+    threads:
+        64
     output:
         deduplicate_list = "data/gtdb_deduplicated_fastas.list"
     run:
-        import gzip
-        with gzip.open(input.ar53_tax, 'rt') as f:
-            for line in f:
-                accession, tax = line.rstrip().split("\t")
-                species_dict[tax] = accession[3:]
-
-
-
-
-
-
-
+        "scripts/dedup.py"
 
 
 
@@ -161,17 +154,6 @@ rule get_eupathdb_genomes:
         "genomes/eupathdb.fofn"
 
 
-
-
-
-rule download_and_derep:
-    input:
-        ar53_tax = "phylo/ar53_taxonomy_{gtdb_release}.tsv.gz",
-        bac120_tax = "phylo/bac120_taxonomy_{gtdb_release}.tsv.gz"
-    output:
-        genome_fofn = "data/genomes.fofn"
-    script:
-        "script/dlderep.py"
 
 
 

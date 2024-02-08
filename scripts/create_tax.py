@@ -1,3 +1,7 @@
+import sys, os
+import gzip
+
+
 def create_tax_ref(nodes, names):
     name_dict = {}
     with open(names) as f:
@@ -6,50 +10,80 @@ def create_tax_ref(nodes, names):
             if name_type == "scientific name":
                 name_dict[node] = name
     graph = {}
-    superkingdom = set()
-    species_strains = set()
+    prefix_dict = {}
     with open(nodes) as f:
-        node, p1, parent, p2, level = line.split("\t")[:5]
-        graph[node] = parent
-        if level == "superkingdom":
-            superkingdom.add(node)
-        elif level == "species" or level == "strain":
-            species_strains.add(level)
-    for i in species_strains:
-        alist = [i]
-        current = i
-        while not current in superkingdom:
-            current = graph[current]
-            alist.append(current)
-        alist.reverse()
-        taxstring = name_dict[alist[0]]
-        for i in alist[1:]
-            taxstring += ';' + name_dict[i]
-        tax_ref[i] = taxstring
-    return(tax_ref)
+        for line in f:
+            node, p1, parent, p2, level = line.split("\t")[:5]
+            if node != parent:
+                graph[node] = parent
+            if level == "superkingdom":
+                prefix_dict[node] = "d__"
+            elif level == "species" or level == "strain":
+                if level == "species":
+                    prefix_dict[node] = "s__"
+            elif level in  ["kingdom", "phylum", "class", "order", "family", "genus"]:
+                prefix_dict[node] = level[0] + "__"
+    return graph, name_dict, prefix_dict
 
-def process_virus(viral_fasta, tax_ref, fasta_outdir):
+
+def get_phylo_name(node):
+    alist = [node]
+    current = node
+    while current in graph:
+        current = graph[current]
+        alist.append(current)
+        if current in prefix_dict and prefix_dict[current] == "d__":
+            break
+    alist.reverse()
+    taxstring = ""
+    for i in alist:
+        if i in prefix_dict:
+            taxstring += ';' + name_dict[i]
+    return(taxstring)
+
+
+def process_virus(viral_fasta, fasta_outdir, taxfile):
     fasta_dict = {}
     tax_id_dict = {}
     with gzip.open(viral_fasta, 'rt') as f:
         for line in f:
             if line.startswith(">"):
-                name = line.split(':')[0][1:]
-                for j in line.split('; '):
-                    if j.startswith("taxid="):
-                        taxid = j.split('=')[0]
-                        taxid.replace(';', '')
-                tax_id_dict[name] = taxid
-                if name in fasta_dict:
-                    fasta_dict[name].append("")
+                name = line.split()[0][1:-1]
+                accession = name.split(':')[0]
+                if accession in fasta_dict:
+                    fasta_dict[accession][name] = ""
                 else:
-                    fasta_dict[name] = [""]
+                    fasta_dict[accession] = {name:""}
+                    for j in line.split('; '):
+                        if j.startswith("taxid="):
+                            taxid = j.split('=')[1]
+                            if ',' in taxid:
+                                taxid = taxid.split(',')[-1]
+                            taxid.replace(';', '')
+                    tax_id_dict[accession] = taxid
             elif line.startswith('--'):
                 pass
             else:
-                fasta_dict[name][-1] += line.rstrip()
-    for i in fasta_dict:
-        with open(os.path.join(fasta_outdir, i + ".fna", 'w') as o:
-            o.write(">")
+                fasta_dict[accession][name] += line.rstrip()
+    with open(taxfile, 'w') as taxout:
+        for i in fasta_dict:
+            with open(os.path.join(fasta_outdir, i + ".fna"), 'w') as o:
+                for j in fasta_dict[i]:
+                    o.write(">{}\n{}\n".format(j, fasta_dict[i][j]))
+            taxname = get_phylo_name(tax_id_dict[i])
+            taxout.write("{}\t{}\t{}\n".format(i, os.path.join(fasta_outdir, i + ".fna"), taxname))
+            print(i, taxname)
+
+def process_euk(infile, outfile):
+    with open(infile) as f, open(outfile, 'w') as o:
+        for line in f:
+            accession, taxid, fasta, gff = line.rstrip().split("\t")
+            outfile.write("{}\t{}\n".format(accession, get_phylo_name(taxid)))
 
 
+graph, name_dict, prefix_dict = create_tax_ref(input.nodes, input.names)
+
+if params.dataset == "virosaurus":
+    process_virus(input.virosaurus_fasta, "data/virus_tenomes", output.virus_tax)
+elif params.dataset == "euk":
+    process_euk(input.euk_list, output.euk_tax)
