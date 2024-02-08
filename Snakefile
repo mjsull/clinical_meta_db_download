@@ -116,7 +116,8 @@ rule create_virus_taxfile:
         nodes = "phylo/nodes.dmp",
         names = "phylo/names.dmp"
     params:
-        dataset = "virosaurus"
+        dataset = "virosaurus",
+        virus_dir = "data/virus_genomes"
     output:
         virus_tax = "phylo/virus_taxonomy.tsv"
     script:

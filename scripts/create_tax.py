@@ -43,6 +43,10 @@ def get_phylo_name(node):
 
 
 def process_virus(viral_fasta, fasta_outdir, taxfile):
+    try:
+        os.makedirs(fasta_outdir)
+    except FileExistsError:
+        pass
     fasta_dict = {}
     tax_id_dict = {}
     with gzip.open(viral_fasta, 'rt') as f:
@@ -84,6 +88,6 @@ def process_euk(infile, outfile):
 graph, name_dict, prefix_dict = create_tax_ref(snakemake.input.nodes, snakemake.input.names)
 
 if snakemake.params.dataset == "virosaurus":
-    process_virus(snakemake.input.virosaurus_fasta, "data/virus_tenomes", snakemake.output.virus_tax)
+    process_virus(snakemake.input.virosaurus_fasta, snakemake.params.virus_dir, snakemake.output.virus_tax)
 elif snakemake.params.dataset == "euk":
     process_euk(snakemake.input.euk_list, snakemake.output.euk_tax)
