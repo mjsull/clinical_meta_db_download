@@ -107,7 +107,7 @@ rule download_ncbi_tax:
         nodes = "phylo/nodes.dmp",
         names = "phylo/names.dmp"
     shell:
-        "wget -o phylo/taxdump.tar.gz https://ftp.ncbi.nlm.nih.gov/pub/taxonomy/taxdump.tar.gz && "
+        "wget -O phylo/taxdump.tar.gz https://ftp.ncbi.nlm.nih.gov/pub/taxonomy/taxdump.tar.gz && "
         "tar -C phylo/ -xzvf phylo/taxdump.tar.gz"
 
 rule create_virus_taxfile:
