@@ -112,7 +112,9 @@ rule download_ncbi_tax:
 
 rule create_virus_taxfile:
     input:
-        virosaurus_fasta = "genomes/virosaurus.fasta.gz"
+        virosaurus_fasta = "genomes/virosaurus.fasta.gz",
+        nodes = "phylo/nodes.dmp",
+        names = "phylo/names.dmp"
     params:
         dataset = "virosaurus"
     output:
@@ -122,7 +124,9 @@ rule create_virus_taxfile:
 
 rule create_euk_taxfile:
     input:
-        euk_list = "data/eupath.list"
+        euk_list = "data/eupath.list",
+        nodes = "phylo/nodes.dmp",
+        names = "phylo/names.dmp"
     params:
         dataset = "euk"
     output:
