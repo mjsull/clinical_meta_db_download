@@ -1,7 +1,7 @@
 configfile: workflow.source_path("config.yaml")
 workdir: config["workdir"]
 gtdb_release: config["gtdb_release"]
-eupath_summary_file: workflow.source_path("data/veupathdb_summary.txt")
+eupath_summary_file = workflow.source_path("data/veupathdb_summary.txt")
 
 onsuccess:
     print("Workflow finished, no error")
