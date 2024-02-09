@@ -39,7 +39,9 @@ def get_phylo_name(node):
     for i in alist:
         if i in prefix_dict:
             taxstring += ';' + name_dict[i]
-    return(taxstring)
+    if taxstring == ""
+        taxstring = "mmissing"
+    return(taxstring[1:])
 
 
 def process_virus(viral_fasta, fasta_outdir, taxfile):
