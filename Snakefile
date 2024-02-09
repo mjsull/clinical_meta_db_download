@@ -1,6 +1,7 @@
 configfile: workflow.source_path("config.yaml")
 workdir: config["workdir"]
 gtdb_release: config["gtdb_release"]
+eupath_summary_file: workflow.source_path("data/veupathdb_summary.txt")
 
 onsuccess:
     print("Workflow finished, no error")
@@ -73,7 +74,7 @@ rule unzip_ncbi:
 
 rule download_eupathdb:
     params:
-         eupath_file =
+         eupath_file = eupath_summary_file
     output:
          eupath_list = "data/eupath.list"
     run:
