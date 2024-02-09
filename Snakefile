@@ -83,7 +83,7 @@ rule download_eupathdb:
             for line in f:
                 splitline = line.rstrip().split("\t")
                 gff, accession, taxid, fasta = splitline[0], splitline[7], splitline[14], splitline[17]
-                if not accessions.startswith("GCF_","GCA_"):
+                if not accession.startswith("GCF_","GCA_"):
                     accession = gff.split('/')[-1][:-4]
                 shell("mkdir -p data/eupath_gffs && mkdir -p data/eupath_fastas")
                 try:
