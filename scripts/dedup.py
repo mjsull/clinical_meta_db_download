@@ -21,7 +21,7 @@ with open(snakemake.input.gtdb_fasta_fofn) as f:
     for line in f:
         accession, location = line.rstrip().split("\t")
         fasta_locations[accession] = location
-with open(euk_tax) as f:
+with open(snakemake.input.euk_tax) as f:
     for line in f:
         accession, tax = line.rstrip().split("\t")
         if not tax in tax_dict:
