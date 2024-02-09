@@ -34,7 +34,7 @@ with open(snakemake.input.euk_tax) as f:
             tax_dict[tax] = []
         tax_dict[tax].append(accession)
 
-print(tax_dict)
+deduplist = []
 for species, accessions in tax_dict.items():
     for i in accessions:
         species_dict[i] = species
