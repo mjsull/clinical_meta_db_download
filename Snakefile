@@ -77,6 +77,7 @@ rule download_eupathdb:
     output:
          eupath_list = "data/eupath.list"
     run:
+        improt os
         with open(params.eupath_file) as f, open(output.eupath_list, 'w') as o:
             f.readline()
             for line in f:
@@ -84,13 +85,15 @@ rule download_eupathdb:
                 gff, accession, taxid, fasta = splitline[0], splitline[7], splitline[14], splitline[17]
                 shell("mkdir -p data/eupath_gffs && mkdir -p data/eupath_fastas")
                 try:
-                    gff_out = "data/eupath_fastas/{}.gff".format(accession)
-                    shell("wget -O {} {}".format(gff_out, gff))
+                    gff_out = "data/eupath_gffs/{}.gff".format(accession)
+                    if not os.path.exists(gff_out):
+                        shell("wget -O {} {}".format(gff_out, gff))
                 except:
                     gff_out = "none"
                 try:
                     fasta_out = "data/eupath_fastas/{}.fna".format(accession)
-                    shell("wget -O {} {}".format(fasta_out, fasta))
+                    if not os.path.exists(fasta_out):
+                        shell("wget -O {} {}".format(fasta_out, fasta))
                 except:
                     fasta_out = "none"
                 o.write("{}\t{}\t{}\t{}\n".format(accession, taxid, fasta_out, gff_out))
@@ -149,15 +152,6 @@ rule deduplicate:
         deduplicate_list = "data/gtdb_deduplicated_fastas.list"
     run:
         "scripts/dedup.py"
-
-
-
-rule get_eupathdb_genomes:
-    params:
-        "data/veupathdb_summary.txt"
-    output:
-        "genomes/eupathdb.fofn"
-
 
 
 

@@ -76,8 +76,6 @@ def process_virus(viral_fasta, fasta_outdir, taxfile):
                     o.write(">{}\n{}\n".format(j, fasta_dict[i][j]))
             taxname = get_phylo_name(tax_id_dict[i])
             taxout.write("{}\t{}\t{}\n".format(i, os.path.join(fasta_outdir, i + ".fna"), taxname))
-            print(i, taxname)
-
 def process_euk(infile, outfile):
     with open(infile) as f, open(outfile, 'w') as o:
         for line in f:
