@@ -2,6 +2,7 @@ import os, gzip, subprocess
 
 tax_dict = {}
 fasta_locations = {}
+species_dict = {}
 os.makedirs("temp")
 os.makedirs("temp_dedup")
 with gzip.open(snakemake.input.ar53_tax, 'rt') as f:
@@ -27,6 +28,8 @@ with open(euk_tax) as f:
             tax_dict[tax] = []
         tax_dict[tax].append(accession)
 for species, accessions in tax_dict.items():
+    for i in accessions:
+        species_dict[i] = species
     if len(accessions) == 1:
         deduplist.append(j[0])
     elif len(accessions) > 1:
@@ -44,4 +47,4 @@ for species, accessions in tax_dict.items():
             os.remove(os.path.join("temp_dedup", i))
 with open(snakemake.output.deduplicate_list, 'w') as o:
     for i in deduplist:
-        o.write("{}\t{}\n".format(accession, ))
+        o.write("{}\t{}\n".format(accession, species_dict[i]))
