@@ -33,12 +33,23 @@ with open(snakemake.input.euk_tax) as f:
         if not tax in tax_dict:
             tax_dict[tax] = []
         tax_dict[tax].append(accession)
+with open(snakemake.input.euk_list) as f:
+    for line in f:
+        accession, taxid, fasta, gff = line.rstrip().split("\t")
+        fasta_locations[accession] = fasta
 
 deduplist = []
 for species, accessions in tax_dict.items():
     for i in accessions:
         species_dict[i] = species
-    if len(accessions) == 1:
+    new_accessions = []
+    for i in accessions:
+        if i in fasta_locations:
+            new_accessions.append(i)
+    accessions = new_accessions
+    if len(accessions) == 0:
+        continue
+    elif len(accessions) == 1:
         deduplist.append(accessions[0])
     elif len(accessions) > 1:
         toremove = []
