@@ -85,13 +85,19 @@ rule download_eupathdb:
                 gff, accession, taxid, fasta = splitline[0], splitline[7], splitline[14], splitline[17]
                 shell("mkdir -p data/eupath_gffs && mkdir -p data/eupath_fastas")
                 try:
-                    gff_out = "data/eupath_gffs/{}.gff".format(accession)
+                    if accessions.startswith("GCF_", "GCA_"):
+                        gff_out = "data/eupath_gffs/{}.gff".format(accession)
+                    else:
+                        gff_out = "data/eupath_gffs/{}.".format(gff.split('/')[-1])
                     if not os.path.exists(gff_out):
                         shell("wget -O {} {}".format(gff_out, gff))
                 except:
                     gff_out = "none"
                 try:
-                    fasta_out = "data/eupath_fastas/{}.fna".format(accession)
+                    if accessions.startswith("GCF_", "GCA_"):
+                        fasta_out = "data/eupath_fastas/{}.fna".format(accession)
+                    else:
+                        fasta_out = "data/eupath_fastas/{}.fna".format(fasta.split('/')[-1].replace(".fasta", ""))
                     if not os.path.exists(fasta_out):
                         shell("wget -O {} {}".format(fasta_out, fasta))
                 except:
