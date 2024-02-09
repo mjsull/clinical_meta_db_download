@@ -77,7 +77,7 @@ rule download_eupathdb:
     output:
          eupath_list = "data/eupath.list"
     run:
-        improt os
+        import os
         with open(params.eupath_file) as f, open(output.eupath_list, 'w') as o:
             f.readline()
             for line in f:
