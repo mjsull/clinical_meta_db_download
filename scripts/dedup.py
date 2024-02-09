@@ -27,11 +27,13 @@ with open(euk_tax) as f:
         if not tax in tax_dict:
             tax_dict[tax] = []
         tax_dict[tax].append(accession)
+
+print(tax_dict)
 for species, accessions in tax_dict.items():
     for i in accessions:
         species_dict[i] = species
     if len(accessions) == 1:
-        deduplist.append(j[0])
+        deduplist.append(accessions[0])
     elif len(accessions) > 1:
         toremove = []
         for i in accessions:

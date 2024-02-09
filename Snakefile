@@ -153,7 +153,7 @@ rule deduplicate:
         64
     output:
         deduplicate_list = "data/gtdb_deduplicated_fastas.list"
-    run:
+    script:
         "scripts/dedup.py"
 
 
