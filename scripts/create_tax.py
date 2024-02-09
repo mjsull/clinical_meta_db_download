@@ -38,7 +38,7 @@ def get_phylo_name(node):
     taxstring = ""
     for i in alist:
         if i in prefix_dict:
-            taxstring += ';' + name_dict[i]
+            taxstring += ';' + prefix_dict[i] + name_dict[i]
     if taxstring == "":
         taxstring = "mmissing"
     return(taxstring[1:])
@@ -77,12 +77,17 @@ def process_virus(viral_fasta, fasta_outdir, taxfile):
                 for j in fasta_dict[i]:
                     o.write(">{}\n{}\n".format(j, fasta_dict[i][j]))
             taxname = get_phylo_name(tax_id_dict[i])
+            if taxname == "missing":
+                taxname = "d__Viruses;missing"
             taxout.write("{}\t{}\t{}\n".format(i, os.path.join(fasta_outdir, i + ".fna"), taxname))
 def process_euk(infile, outfile):
     with open(infile) as f, open(outfile, 'w') as o:
         for line in f:
             accession, taxid, fasta, gff = line.rstrip().split("\t")
-            o.write("{}\t{}\n".format(accession, get_phylo_name(taxid)))
+            phylo_name = get_phylo_name(taxid)
+            if phylo_name == "missing":
+                phylo_name = "d__Eukaryota;missing"
+            o.write("{}\t{}\n".format(accession, phylo_name))
 
 
 graph, name_dict, prefix_dict = create_tax_ref(snakemake.input.nodes, snakemake.input.names)
