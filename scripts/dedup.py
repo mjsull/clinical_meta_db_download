@@ -1,10 +1,16 @@
-import os, gzip, subprocess
+import os, gzip, subprocess, shutil
 
 tax_dict = {}
 fasta_locations = {}
 species_dict = {}
-os.makedirs("temp")
-os.makedirs("temp_dedup")
+try:
+    os.makedirs("temp")
+except FileExistsError:
+    pass
+try:
+    os.makedirs("temp_dedup")
+except FileExistsError:
+    pass
 with gzip.open(snakemake.input.ar53_tax, 'rt') as f:
     for line in f:
         accession, tax = line.rstrip().split("\t")
