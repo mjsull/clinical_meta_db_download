@@ -80,7 +80,7 @@ def process_euk(infile, outfile):
     with open(infile) as f, open(outfile, 'w') as o:
         for line in f:
             accession, taxid, fasta, gff = line.rstrip().split("\t")
-            outfile.write("{}\t{}\n".format(accession, get_phylo_name(taxid)))
+            o.write("{}\t{}\n".format(accession, get_phylo_name(taxid)))
 
 
 graph, name_dict, prefix_dict = create_tax_ref(snakemake.input.nodes, snakemake.input.names)

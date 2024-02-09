@@ -73,7 +73,7 @@ rule unzip_ncbi:
 
 rule download_eupathdb:
     params:
-         eupath_file =  workflow.source_path("data/veupathdb_summary.txt")
+         eupath_file =
     output:
          eupath_list = "data/eupath.list"
     run:
