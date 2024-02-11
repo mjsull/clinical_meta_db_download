@@ -52,11 +52,11 @@ for species, accessions in tax_dict.items():
     elif len(accessions) == 1:
         deduplist.append(accessions[0])
     elif len(accessions) > 1:
-        toremove = []
+        toremove = set()
         for i in accessions:
             destination = "temp/{}.fna".format(i)
             shutil.copy2(fasta_locations[i], destination)
-            toremove.append(destination)
+            toremove.add(destination)
         subprocess.Popen("dereplicator.py --distance 0.02 --threads {} temp temp_dedup".format(snakemake.threads), shell=True).wait()
         for i in toremove:
             os.remove(i)
