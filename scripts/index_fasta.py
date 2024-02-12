@@ -45,7 +45,6 @@ def process_list(dedup_file, eupath_file, gtdb_file, viro_file, prefix, taxonomy
             with open("{}.{}.bwa.fa".format(prefix, num), 'w') as o:
                 for accession, fasta in fastas:
                     count += 1
-                    print("{}/{}".format(count+1, len(genomes)), end='\r')
                     if fasta.endswith(".gz"):
                         with gzip.open(fasta, 'rt') as f:
                             process_file(f, o, accession)
