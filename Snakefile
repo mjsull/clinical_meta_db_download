@@ -157,7 +157,21 @@ rule deduplicate:
         "scripts/dedup.py"
 
 
+rule create_index_fastas:
+    input:
+        deduplicate_list = "data/gtdb_deduplicated_fastas.list",
+        gtdb_fasta_fofn = "data/gtdb_fasta.list",
+        euk_list= "data/eupath.list",
+        virus_tax = "phylo/virus_taxonomy.tsv"
+    output:
+        taxonomy_file = "db/final_database/taxonomy.tsv",
+        index_fofn = "db/final_database/index_fofn"
+    script:
+        "scripts/index_fasta.py"
 
-
-
+rule index_fasta:
+    input:
+        index_fofn = "db/final_database/index_fofn"
+    output:
+        index_out_fofn = "db/final_database/index_out_fofn"
 
