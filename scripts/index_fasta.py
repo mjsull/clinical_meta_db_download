@@ -31,6 +31,7 @@ def process_list(dedup_file, eupath_file, gtdb_file, viro_file, prefix, taxonomy
     genome_groups = []
     sum_size = 0
     group = []
+    print(len(phylo_dict), "dafasfa")
     with open(taxonomy_out, 'w') as o:
         for i, j in phylo_dict.items():
             sum_size +=  os.path.getsize(fasta_location_dict[i])
@@ -40,6 +41,7 @@ def process_list(dedup_file, eupath_file, gtdb_file, viro_file, prefix, taxonomy
                 genome_groups.append(group)
                 sum_size = 0
                 group = []
+    print(len(genome_groups), len(genome_groups[0]), "dafasfasdfas")
     with open(fasta_out, 'w') as out_fofn:
         for num, fastas in enumerate(genome_groups):
             with open("{}.{}.bwa.fa".format(prefix, num), 'w') as o:
