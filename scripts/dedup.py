@@ -6,11 +6,13 @@ species_dict = {}
 try:
     os.makedirs("temp")
 except FileExistsError:
-    pass
+    if len(os.listdir("temp")) > 0:
+        sys.exit("Please empty temp directory in working directory.")
 try:
     os.makedirs("temp_dedup")
 except FileExistsError:
-    pass
+    if len(os.listdir("temp_dedup")) > 0:
+        sys.exit("Please empty temp directory in working directory.")
 with gzip.open(snakemake.input.ar53_tax, 'rt') as f:
     for line in f:
         accession, tax = line.rstrip().split("\t")
@@ -39,6 +41,7 @@ with open(snakemake.input.euk_list) as f:
         fasta_locations[accession] = fasta
 
 deduplist = []
+
 for species, accessions in tax_dict.items():
     for i in accessions:
         species_dict[i] = species
@@ -66,4 +69,4 @@ for species, accessions in tax_dict.items():
             os.remove(os.path.join("temp_dedup", i))
 with open(snakemake.output.deduplicate_list, 'w') as o:
     for i in deduplist:
-        o.write("{}\t{}\n".format(accession, species_dict[i]))
+        o.write("{}\t{}\n".format(i, species_dict[i]))

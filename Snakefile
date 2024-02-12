@@ -164,8 +164,8 @@ rule create_index_fastas:
         euk_list= "data/eupath.list",
         virus_tax = "phylo/virus_taxonomy.tsv"
     output:
-        taxonomy_file = "db/final_database/taxonomy.tsv",
-        index_fofn = "db/final_database/index_fofn"
+        taxonomy_file = "final_database/taxonomy.tsv",
+        index_fofn = "final_database/index_fofn"
     script:
         "scripts/index_fasta.py"
 
