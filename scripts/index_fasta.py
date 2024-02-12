@@ -24,8 +24,9 @@ def process_list(dedup_file, eupath_file, gtdb_file, viro_file, prefix, taxonomy
             accession, taxid, fasta, gff = line.rstrip().split("\t")
             fasta_location_dict[accession] = fasta
     with open(dedup_file) as f:
-        accession, tax = line.rstrip().split("\t")
-        phylo_dict[accession] = tax
+        for line in f:
+            accession, tax = line.rstrip().split("\t")
+            phylo_dict[accession] = tax
     count = 0
     genome_groups = []
     sum_size = 0
