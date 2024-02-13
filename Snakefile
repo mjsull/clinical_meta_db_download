@@ -171,9 +171,9 @@ rule create_index_fastas:
 
 rule index_fasta:
     input:
-        index_fofn = "db/final_database/index_fofn"
+        index_fofn = "final_database/index_fofn"
     output:
-        index_out_fofn = "db/final_database/index_out_fofn"
+        index_out_fofn = "final_database/index_out_fofn"
     threads:
         64
     shell:
