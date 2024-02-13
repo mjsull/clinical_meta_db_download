@@ -177,6 +177,6 @@ rule index_fasta:
     threads:
         64
     shell:
-        "cat {input.index_fofn} | while read line; do echo bwa index -p ${line:0:-3} $file; done > parallel -j {threads} && "
-        "cat {input.index_fofn} | while read line; do echo ${line:0:-3}; done > {output.index_out_fofn}"
+        "cat {input.index_fofn} | while read line; do echo bwa index -p ${{line:0:-3}} $file; done > parallel -j {threads} && "
+        "cat {input.index_fofn} | while read line; do echo ${{line:0:-3}}; done > {output.index_out_fofn}"
 
