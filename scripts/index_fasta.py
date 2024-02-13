@@ -55,4 +55,4 @@ def process_list(dedup_file, eupath_file, gtdb_file, viro_file, prefix, taxonomy
 
 
 process_list(snakemake.input.deduplicate_list, snakemake.input.euk_list, snakemake.input.gtdb_fasta_fofn,
-             snakemake.input.virus_tax, "cmdd", snakemake.output.taxonomy_file, snakemake.output.index_fofn)
+             snakemake.input.virus_tax, "final_database/cmdd", snakemake.output.taxonomy_file, snakemake.output.index_fofn)
