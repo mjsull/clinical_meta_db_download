@@ -40,7 +40,7 @@ def get_phylo_name(node):
         if i in prefix_dict:
             taxstring += ';' + prefix_dict[i] + name_dict[i]
     if taxstring == "":
-        taxstring = "mmissing"
+        taxstring = "missing"
     return(taxstring[1:])
 
 
@@ -55,7 +55,7 @@ def process_virus(viral_fasta, fasta_outdir, taxfile):
         for line in f:
             if line.startswith(">"):
                 name = line.split()[0][1:-1]
-                accession = name.split(':')[0]
+                accession = name.split('|')[2]
                 if accession in fasta_dict:
                     fasta_dict[accession][name] = ""
                 else:
@@ -80,6 +80,7 @@ def process_virus(viral_fasta, fasta_outdir, taxfile):
             if taxname == "missing":
                 taxname = "d__Viruses;missing"
             taxout.write("{}\t{}\t{}\n".format(i, os.path.join(fasta_outdir, i + ".fna"), taxname))
+
 def process_euk(infile, outfile):
     with open(infile) as f, open(outfile, 'w') as o:
         for line in f:
@@ -92,7 +93,7 @@ def process_euk(infile, outfile):
 
 graph, name_dict, prefix_dict = create_tax_ref(snakemake.input.nodes, snakemake.input.names)
 
-if snakemake.params.dataset == "virosaurus":
-    process_virus(snakemake.input.virosaurus_fasta, snakemake.params.virus_dir, snakemake.output.virus_tax)
+if snakemake.params.dataset == "virus":
+    process_virus(snakemake.input.rvdb_fasta, snakemake.params.virus_dir, snakemake.output.virus_tax)
 elif snakemake.params.dataset == "euk":
     process_euk(snakemake.input.euk_list, snakemake.output.euk_tax)

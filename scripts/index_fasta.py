@@ -5,7 +5,7 @@ def process_file(f, o, accession):
         if line.startswith(">"):
             o.write(">" + accession + "|" + line[1:])
         else:
-            o.write(line)
+            o.write(line.rstrip() + "\n")
 
 def process_list(dedup_file, eupath_file, gtdb_file, viro_file, prefix, taxonomy_out, fasta_out, max_size=1000000000):
     fasta_location_dict = {}

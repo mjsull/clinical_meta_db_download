@@ -1,6 +1,7 @@
 configfile: workflow.source_path("config.yaml")
 workdir: config["workdir"]
-gtdb_release: config["gtdb_release"]
+gtdb_release = config["gtdb_release"]
+gtdb_subrelease = config["gtdb_subrelease"]
 eupath_summary_file = workflow.source_path("data/veupathdb_summary.txt")
 
 onsuccess:
@@ -10,12 +11,15 @@ onerror:
     print("An error occurred")
 
 rule get_gtdb_taxfiles:
+    params:
+        gtdb_release = gtdb_release,
+        gtdb_subrelease = gtdb_subrelease
     output:
         ar53_tax = "phylo/ar53_taxonomy.tsv.gz",
         bac120_tax = "phylo/bac120_taxonomy.tsv.gz"
     shell:
-        "wget -O {output.ar53_tax} https://data.gtdb.ecogenomic.org/releases/release214/214.1/ar53_taxonomy_r214.tsv.gz && " 
-        "wget -O {output.bac120_tax} https://data.gtdb.ecogenomic.org/releases/release214/214.1/bac120_taxonomy_r214.tsv.gz"
+        "wget -O {output.ar53_tax} https://data.gtdb.ecogenomic.org/releases/release{params.gtdb_release}/{params.gtdb_release}.{params.gtdb_subrelease}/ar53_taxonomy_r{params.gtdb_release}.tsv.gz && " 
+        "wget -O {output.bac120_tax} https://data.gtdb.ecogenomic.org/releases/release{params.gtdb_release}/{params.gtdb_release}.{params.gtdb_subrelease}/bac120_taxonomy_r{params.gtdb_release}.tsv.gz"
 
 rule split_gtdb_accessions:
     input:
@@ -83,7 +87,7 @@ rule download_eupathdb:
             f.readline()
             for line in f:
                 splitline = line.rstrip().split("\t")
-                gff, accession, taxid, fasta = splitline[0], splitline[7], splitline[14], splitline[17]
+                gff, accession, taxid, fasta = splitline[0], splitline[7], splitline[14], splitline[18]
                 if not accession.startswith(("GCF_","GCA_")):
                     accession = gff.split('/')[-1][:-4]
                 shell("mkdir -p data/eupath_gffs && mkdir -p data/eupath_fastas")
@@ -102,11 +106,57 @@ rule download_eupathdb:
                 o.write("{}\t{}\t{}\t{}\n".format(accession, taxid, fasta_out, gff_out))
 
 
-rule download_virosaurus:
+rule download_rvdb:
     output:
-        virosaurus_fasta = "genomes/virosaurus.fasta.gz"
+        rvdb_fasta = "genomes/virus.fasta.gz"
     shell:
-        "wget -O {output.virosaurus_fasta} https://viralzone.expasy.org/resources/Virosaurus/2020%5F4/virosaurus98%5Fvertebrate-20200330.fas.gz"
+        "wget -O {output.rvdb_fasta} https://rvdb.dbi.udel.edu/download/C-RVDBvCurrent.fasta.gz"
+
+rule download_rvdb_prot:
+    output:
+        rvbd_faa = "genomes/virus.faa.xz"
+    shell:
+        "wget -O {output.rvbd_faa} https://rvdb-prot.pasteur.fr/files/U-RVDBv29.0-prot.fasta.xz"
+
+
+rule download_taxids:
+    input:
+        rvdb_fasta = "genomes/virus.fasta.gz"
+    output:
+        taxids = "genomes/virus_taxids.txt"
+    run:
+        import gzip
+        with gzip.open(input.rvdb_fasta, 'rt') as f:
+            acclist = []
+            for line in f:
+                if line.startswith(">"):
+                    taxid = line.split("|")[2]
+                    acclist.append("{}\n".format(taxid))
+        for num in range(0, len(acclist), 5000):
+            with open("acc_list_prot", 'w') as o:
+                for i in acclist[num:num+5000]:
+                    o.write("{}\n".format(i))
+            shell("cat acc_list_prot | epost -db nuccore | esummary | ~/edirect/xtract -pattern DocumentSummary -element Caption,TaxId >> {output.taxids}")
+
+rule download_taxids_faa:
+    input:
+        rvdb_fasta = "genomes/virus.faa.xz"
+    output:
+        taxids = "genomes/virus_prot_taxids.txt"
+    run:
+        import gzip
+        with gzip.open(input.rvdb_fasta, 'rt') as f:
+            acclist = []
+            for line in f:
+                if line.startswith(">"):
+                    taxid = line.split("|")[2]
+                    acclist.append("{}\n".format(taxid))
+        for num in range(0, len(acclist), 5000):
+            with open("acc_list_prot", 'w') as o:
+                for i in acclist[num:num+5000]:
+                    o.write("{}\n".format(i))
+        shell("cat acc_list_prot | epost -db protein | esummary | ~/edirect/xtract -pattern DocumentSummary -element Caption,TaxId >> {output.taxids}")
+
 
 rule download_ncbi_tax:
     output:
@@ -118,7 +168,8 @@ rule download_ncbi_tax:
 
 rule create_virus_taxfile:
     input:
-        virosaurus_fasta = "genomes/virosaurus.fasta.gz",
+        rvdb_fasta = "genomes/virus.fasta.gz",
+        rvbd_faa = "genomes/virus.faa.gz",
         nodes = "phylo/nodes.dmp",
         names = "phylo/names.dmp"
     params:
@@ -168,15 +219,4 @@ rule create_index_fastas:
         index_fofn = "final_database/index_fofn"
     script:
         "scripts/index_fasta.py"
-
-rule index_fasta:
-    input:
-        index_fofn = "final_database/index_fofn"
-    output:
-        index_out_fofn = "final_database/index_out_fofn"
-    threads:
-        64
-    shell:
-        "cat {input.index_fofn} | while read line; do echo bwa index -p ${{line:0:-3}} $line; done | parallel -j {threads} && "
-        "cat {input.index_fofn} | while read line; do echo ${{line:0:-3}}; done > {output.index_out_fofn}"
 

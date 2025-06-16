@@ -1,4 +1,6 @@
 gtdb_release:
-  r214
+  r226
+gtdb_subrelease:
+  0
 datasets_binary:
   ~/apps/datasets
