@@ -1,6 +1,6 @@
 import sys, os
 import gzip
-
+import pandas as pd
 
 def create_tax_ref(nodes, names):
     name_dict = {}
@@ -44,28 +44,28 @@ def get_phylo_name(node):
     return(taxstring[1:])
 
 
-def process_virus(viral_fasta, fasta_outdir, taxfile):
+def process_virus(viral_fasta, virus_accessions, virus_taxids, fasta_outdir, taxfile):
     try:
         os.makedirs(fasta_outdir)
     except FileExistsError:
         pass
     fasta_dict = {}
     tax_id_dict = {}
-    with gzip.open(viral_fasta, 'rt') as f:
+    with gzip.open(viral_fasta, 'rt') as f, open(virus_taxids) as taxids:
+        virus_taxids_df = pd.read_csv(taxids, sep="\t", header=None, names=["accession", "tax_id"])
         for line in f:
             if line.startswith(">"):
-                name = line.split()[0][1:-1]
+                name = line.strip().lstrip('>')
                 accession = name.split('|')[2]
                 if accession in fasta_dict:
                     fasta_dict[accession][name] = ""
                 else:
                     fasta_dict[accession] = {name:""}
-                    for j in line.split('; '):
-                        if j.startswith("taxid="):
-                            taxid = j.split('=')[1]
-                            if ',' in taxid:
-                                taxid = taxid.split(',')[-1]
-                            taxid.replace(';', '')
+                    normalised_accession = accession.split(".")[0]
+                    if normalised_accession in virus_taxids_df['accession'].values:
+                        taxid = str(virus_taxids_df.loc[virus_taxids_df['accession'] == normalised_accession, 'tax_id'].values[0])
+                    else:
+                        taxid = "missing"
                     tax_id_dict[accession] = taxid
             elif line.startswith('--'):
                 pass
@@ -94,6 +94,6 @@ def process_euk(infile, outfile):
 graph, name_dict, prefix_dict = create_tax_ref(snakemake.input.nodes, snakemake.input.names)
 
 if snakemake.params.dataset == "virus":
-    process_virus(snakemake.input.rvdb_fasta, snakemake.params.virus_dir, snakemake.output.virus_tax)
+    process_virus(snakemake.input.rvdb_fasta, snakemake.input.virus_accessions, snakemake.input.virus_taxids, snakemake.params.virus_dir, snakemake.output.virus_tax)
 elif snakemake.params.dataset == "euk":
     process_euk(snakemake.input.euk_list, snakemake.output.euk_tax)

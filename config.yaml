@@ -1,6 +1,6 @@
 gtdb_release:
-  r226
+  226
 gtdb_subrelease:
   0
 datasets_binary:
-  ~/apps/datasets
+  /apps/conda/pkgs/ncbi-datasets-cli-18.0.2-ha770c72_0/bin/datasets

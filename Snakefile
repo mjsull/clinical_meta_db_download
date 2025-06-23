@@ -4,6 +4,7 @@ gtdb_release = config["gtdb_release"]
 gtdb_subrelease = config["gtdb_subrelease"]
 eupath_summary_file = workflow.source_path("data/veupathdb_summary.txt")
 
+
 onsuccess:
     print("Workflow finished, no error")
 
@@ -18,8 +19,8 @@ rule get_gtdb_taxfiles:
         ar53_tax = "phylo/ar53_taxonomy.tsv.gz",
         bac120_tax = "phylo/bac120_taxonomy.tsv.gz"
     shell:
-        "wget -O {output.ar53_tax} https://data.gtdb.ecogenomic.org/releases/release{params.gtdb_release}/{params.gtdb_release}.{params.gtdb_subrelease}/ar53_taxonomy_r{params.gtdb_release}.tsv.gz && " 
-        "wget -O {output.bac120_tax} https://data.gtdb.ecogenomic.org/releases/release{params.gtdb_release}/{params.gtdb_release}.{params.gtdb_subrelease}/bac120_taxonomy_r{params.gtdb_release}.tsv.gz"
+        "wget -O {output.ar53_tax} https://data.gtdb.ecogenomic.org/releases/release{params.gtdb_release}/{params.gtdb_release}.{params.gtdb_subrelease}/ar53_taxonomy_r{params.gtdb_release}.tsv.gz --no-check-certificate && " 
+        "wget -O {output.bac120_tax} https://data.gtdb.ecogenomic.org/releases/release{params.gtdb_release}/{params.gtdb_release}.{params.gtdb_subrelease}/bac120_taxonomy_r{params.gtdb_release}.tsv.gz --no-check-certificate"
 
 rule split_gtdb_accessions:
     input:
@@ -27,13 +28,15 @@ rule split_gtdb_accessions:
         bac120_tax = "phylo/bac120_taxonomy.tsv.gz"
     output:
         accession_list = "data/gtdb_accessions",
-        gtdb_list = expand("data/gtdb.{num}.list", num=["{:02d}".format(x) for x in range(50)])
+        gtdb_list = expand("data/gtdb.{num}.list", num=["{:03d}".format(x) for x in range(200)])
     shell:
         "zcat {input.ar53_tax} {input.bac120_tax} | awk -F'\t' '{{print substr($1, 4); }}' > {output.accession_list} && "
-        "split -n l/50 -d --additional-suffix=.list data/gtdb_accessions data/gtdb."
+        "split -n l/200 -d --additional-suffix=.list data/gtdb_accessions data/gtdb."
 
 
 rule download_gtdb:
+    resources:
+        api_calls = 1
     input:
         gtdb_list =  "data/gtdb.{num}.list"
     params:
@@ -41,21 +44,30 @@ rule download_gtdb:
     output:
         ncbi_file = "data/ncbi_file.{num}.zip"
     shell:
-        "{params.datasets_binary} download genome accession --filename {output.ncbi_file} --include genome,gff3 --inputfile {input.gtdb_list}"
+        "{params.datasets_binary} download genome accession --dehydrated --filename {output.ncbi_file} --include genome,gff3 --inputfile {input.gtdb_list}"
 
-
-rule unzip_ncbi:
+rule unzip_ncbi_and_rehydrate:
+    resources:
+        api_calls = 1
     input:
-        gtdb_list =  expand("data/gtdb.{num}.list", num=["{:02d}".format(x) for x in range(50)]),
-        ncbi_file = expand("data/ncbi_file.{num}.zip", num=["{:02d}".format(x) for x in range(50)])
+        ncbi_file = "data/ncbi_file.{num}.zip"
+    output:
+        ncbi_dir = directory("data/ncbi_file.{num}")
+    shell:
+        "unzip -o {input.ncbi_file} -d {output.ncbi_dir} && "
+        "datasets rehydrate --directory {output.ncbi_dir}/"
+
+rule collate_ncbi_list:
+    input:
+        gtdb_list =  expand("data/gtdb.{num}.list", num=["{:03d}".format(x) for x in range(200)]),
+        ncbi_file = expand("data/ncbi_file.{num}", num=["{:03d}".format(x) for x in range(200)])
     output:
         gtdb_fasta_fofn = "data/gtdb_fasta.list",
         gtdb_gff_fofn = "data/gtdb_gff.list"
     run:
-        import glob, sys, os, subprocess
+        import glob, sys, os
         with open(output.gtdb_fasta_fofn,'w') as fo, open(output.gtdb_gff_fofn,'w') as go:
             for i, j in zip(input.ncbi_file, input.gtdb_list):
-                subprocess.Popen("unzip -o {} -d data/".format(i), shell=True).wait()
                 with open(j) as f:
                     for line in f:
                         accession = line.rstrip()
@@ -87,7 +99,7 @@ rule download_eupathdb:
             f.readline()
             for line in f:
                 splitline = line.rstrip().split("\t")
-                gff, accession, taxid, fasta = splitline[0], splitline[7], splitline[14], splitline[18]
+                gff, accession, taxid, fasta = splitline[0], splitline[11], splitline[18], splitline[22]
                 if not accession.startswith(("GCF_","GCA_")):
                     accession = gff.split('/')[-1][:-4]
                 shell("mkdir -p data/eupath_gffs && mkdir -p data/eupath_fastas")
@@ -112,6 +124,7 @@ rule download_rvdb:
     shell:
         "wget -O {output.rvdb_fasta} https://rvdb.dbi.udel.edu/download/C-RVDBvCurrent.fasta.gz"
 
+#The below wget had multiple time outs, but was able to complete on retries. Should you add a --timeout=2400 option?
 rule download_rvdb_prot:
     output:
         rvbd_faa = "genomes/virus.faa.xz"
@@ -166,14 +179,30 @@ rule download_ncbi_tax:
         "wget -O phylo/taxdump.tar.gz https://ftp.ncbi.nlm.nih.gov/pub/taxonomy/taxdump.tar.gz && "
         "tar -C phylo/ -xzvf phylo/taxdump.tar.gz"
 
+
+rule get_virus_taxids:
+    input:
+        rvdb_fasta = "genomes/virus.fasta.gz"
+    output:
+        virus_accessions = "genomes/virus_accession.list",
+        tmp_virus_accessions = directory("genomes/tmp"),
+        virus_taxids = "genomes/virus_taxids.tsv"
+    shell:
+        "zcat {input.rvdb_fasta} | grep '>' | awk -F'|' '{{print $3}}' > {output.virus_accessions} && "
+        "mkdir {output.tmp_virus_accessions} && "
+        "split -l 100 {output.virus_accessions} {output.tmp_virus_accessions}/virus_acc_ && "
+        "for file in {output.tmp_virus_accessions}/virus_acc_*; do esearch -db nucleotide -query $(paste -sd, $file) | efetch -format docsum | xtract -pattern DocumentSummary -element Caption TaxId >> {output.virus_taxids}; done"
+
 rule create_virus_taxfile:
     input:
         rvdb_fasta = "genomes/virus.fasta.gz",
-        rvbd_faa = "genomes/virus.faa.gz",
+        rvbd_faa = "genomes/virus.faa.xz",
+        virus_accessions = "genomes/virus_accession.list",
+        virus_taxids = "genomes/virus_taxids.tsv",
         nodes = "phylo/nodes.dmp",
         names = "phylo/names.dmp"
     params:
-        dataset = "virosaurus",
+        dataset = "virus",
         virus_dir = "data/virus_genomes"
     output:
         virus_tax = "phylo/virus_taxonomy.tsv"
@@ -200,6 +229,8 @@ rule deduplicate:
         bac120_tax = "phylo/bac120_taxonomy.tsv.gz",
         euk_tax = "phylo/euk_taxonomy.tsv",
         euk_list= "data/eupath.list"
+    params: 
+        derep_script = "dereplicator.py"
     threads:
         64
     output:

@@ -60,7 +60,7 @@ for species, accessions in tax_dict.items():
             destination = "temp/{}.fna".format(i)
             shutil.copy2(fasta_locations[i], destination)
             toremove.add(destination)
-        subprocess.Popen("dereplicator.py --distance 0.02 --threads {} temp temp_dedup".format(snakemake.threads), shell=True).wait()
+        subprocess.Popen("{}/{} --distance 0.02 --threads {} temp temp_dedup".format(snakemake.scriptdir, snakemake.params.derep_script, snakemake.threads), shell=True).wait()
         for i in toremove:
             os.remove(i)
         for i in os.listdir("temp_dedup"):
