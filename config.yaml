@@ -2,5 +2,11 @@ gtdb_release:
   226
 gtdb_subrelease:
   0
+rvdb_prot_release:
+  30.0
 datasets_binary:
   /apps/conda/pkgs/ncbi-datasets-cli-18.0.2-ha770c72_0/bin/datasets
+dustmasker_binary:
+  /apps/conda/pkgs/blast-2.16.0-hc155240_3/bin/dustmasker
+kraken_threads:
+  64

@@ -71,7 +71,7 @@ rule collate_ncbi_list:
                 with open(j) as f:
                     for line in f:
                         accession = line.rstrip()
-                        fastas = glob.glob("data/ncbi_dataset/data/{}/*_genomic.fna".format(accession))
+                        fastas = glob.glob("{}/ncbi_dataset/data/{}/*_genomic.fna".format(i, accession))
                         if len(fastas) == 0:
                             continue
                         elif len(fastas) == 1:
@@ -79,8 +79,8 @@ rule collate_ncbi_list:
                         else:
                             sys.stderr.write("More than one fasta file found for accession {}.".format(accession))
                             sys.exit()
-                        if os.path.exists("data/ncbi_dataset/data/{}/genomic.gff".format(accession)):
-                            gff = "data/ncbi_dataset/data/{}/genomic.gff".format(accession)
+                        if os.path.exists("{}/ncbi_dataset/data/{}/genomic.gff".format(i, accession)):
+                            gff = "{}/ncbi_dataset/data/{}/genomic.gff".format(i, accession)
                         else:
                             gff = None
                         fo.write("{}\t{}\n".format(accession, fasta))
@@ -90,9 +90,9 @@ rule collate_ncbi_list:
 
 rule download_eupathdb:
     params:
-         eupath_file = eupath_summary_file
+        eupath_file = eupath_summary_file
     output:
-         eupath_list = "data/eupath.list"
+        eupath_list = "data/eupath.list"
     run:
         import os
         with open(params.eupath_file) as f, open(output.eupath_list, 'w') as o:
@@ -124,51 +124,53 @@ rule download_rvdb:
     shell:
         "wget -O {output.rvdb_fasta} https://rvdb.dbi.udel.edu/download/C-RVDBvCurrent.fasta.gz"
 
-#The below wget had multiple time outs, but was able to complete on retries. Should you add a --timeout=2400 option?
+
 rule download_rvdb_prot:
+    params:
+        rvdb_prot_release = config["rvdb_prot_release"]
     output:
         rvbd_faa = "genomes/virus.faa.xz"
     shell:
-        "wget -O {output.rvbd_faa} https://rvdb-prot.pasteur.fr/files/U-RVDBv29.0-prot.fasta.xz"
+        "wget -O {output.rvbd_faa} https://rvdb-prot.pasteur.fr/files/U-RVDBv{params.rvdb_prot_release}-prot.fasta.xz --timeout 2400"
 
 
 rule download_taxids:
     input:
         rvdb_fasta = "genomes/virus.fasta.gz"
     output:
-        taxids = "genomes/virus_taxids.txt"
+        taxids = "genomes/virus_taxids.txt",
+        virus_accession_list = "genomes/virus_accession.list",
+        acc_list_fasta = "acc_list_fasta"
     run:
         import gzip
-        with gzip.open(input.rvdb_fasta, 'rt') as f:
-            acclist = []
-            for line in f:
-                if line.startswith(">"):
-                    taxid = line.split("|")[2]
-                    acclist.append("{}\n".format(taxid))
-        for num in range(0, len(acclist), 5000):
-            with open("acc_list_prot", 'w') as o:
-                for i in acclist[num:num+5000]:
-                    o.write("{}\n".format(i))
-            shell("cat acc_list_prot | epost -db nuccore | esummary | ~/edirect/xtract -pattern DocumentSummary -element Caption,TaxId >> {output.taxids}")
+        shell("zcat {input.rvdb_fasta} | grep '>' | awk -F'|' '{{print $3}}' > {output.virus_accession_list}")
+        with open(output.virus_accession_list, 'r') as f:
+            acclist = [line.strip() for line in f if line.strip()]
+        with open(output.taxids, 'w'):
+            for num in range(0, len(acclist), 5000):
+                with open(output.acc_list_fasta, 'w') as o:
+                    for i in acclist[num:num+5000]:
+                        o.write("{}\n".format(i))
+                shell("cat {} | epost -db nuccore | esummary | xtract -pattern DocumentSummary -element Caption,TaxId >> {}".format(output.acc_list_fasta, output.taxids))
 
 rule download_taxids_faa:
     input:
         rvdb_fasta = "genomes/virus.faa.xz"
     output:
-        taxids = "genomes/virus_prot_taxids.txt"
+        taxids = "genomes/virus_prot_taxids.txt",
+        virus_prot_accession_list = "genomes/virus_prot_accession.list",
+        acc_list_prot = "acc_list_prot"
     run:
         import gzip
-        with gzip.open(input.rvdb_fasta, 'rt') as f:
-            acclist = []
-            for line in f:
-                if line.startswith(">"):
-                    taxid = line.split("|")[2]
-                    acclist.append("{}\n".format(taxid))
-        for num in range(0, len(acclist), 5000):
-            with open("acc_list_prot", 'w') as o:
-                for i in acclist[num:num+5000]:
-                    o.write("{}\n".format(i))
-        shell("cat acc_list_prot | epost -db protein | esummary | ~/edirect/xtract -pattern DocumentSummary -element Caption,TaxId >> {output.taxids}")
+        shell("xzcat {input.rvdb_fasta} | grep '>' | awk -F'|' '{{print $3}}' > {output.virus_prot_accession_list}")
+        with open(output.virus_prot_accession_list, 'r') as f:
+            acclist = [line.strip() for line in f if line.strip()]
+        with open(output.taxids, 'w'):
+            for num in range(0, len(acclist), 5000):
+                with open(output.acc_list_prot, 'w') as o:
+                    for i in acclist[num:num+5000]:
+                        o.write("{}\n".format(i))
+                shell("cat {} | epost -db protein | esummary | xtract -pattern DocumentSummary -element Caption,TaxId >> {}".format(output.acc_list_prot, output.taxids))
 
 
 rule download_ncbi_tax:
@@ -179,26 +181,14 @@ rule download_ncbi_tax:
         "wget -O phylo/taxdump.tar.gz https://ftp.ncbi.nlm.nih.gov/pub/taxonomy/taxdump.tar.gz && "
         "tar -C phylo/ -xzvf phylo/taxdump.tar.gz"
 
-
-rule get_virus_taxids:
-    input:
-        rvdb_fasta = "genomes/virus.fasta.gz"
-    output:
-        virus_accessions = "genomes/virus_accession.list",
-        tmp_virus_accessions = directory("genomes/tmp"),
-        virus_taxids = "genomes/virus_taxids.tsv"
-    shell:
-        "zcat {input.rvdb_fasta} | grep '>' | awk -F'|' '{{print $3}}' > {output.virus_accessions} && "
-        "mkdir {output.tmp_virus_accessions} && "
-        "split -l 100 {output.virus_accessions} {output.tmp_virus_accessions}/virus_acc_ && "
-        "for file in {output.tmp_virus_accessions}/virus_acc_*; do esearch -db nucleotide -query $(paste -sd, $file) | efetch -format docsum | xtract -pattern DocumentSummary -element Caption TaxId >> {output.virus_taxids}; done"
-
 rule create_virus_taxfile:
     input:
         rvdb_fasta = "genomes/virus.fasta.gz",
         rvbd_faa = "genomes/virus.faa.xz",
         virus_accessions = "genomes/virus_accession.list",
-        virus_taxids = "genomes/virus_taxids.tsv",
+        virus_prot_accessions = "genomes/virus_prot_accession.list",
+        virus_taxids = "genomes/virus_taxids.txt",
+        virus_prot_taxids = "genomes/virus_prot_taxids.txt",
         nodes = "phylo/nodes.dmp",
         names = "phylo/names.dmp"
     params:
@@ -251,3 +241,38 @@ rule create_index_fastas:
     script:
         "scripts/index_fasta.py"
 
+
+rule dustmask_db:
+    input:
+        index_fofn = "final_database/index_fofn",
+        db_files = "final_database/cmdd.{num}.bwa.fa.gz"
+    output:
+        dustmask_db = "dustmasked_db/cmdd.{num}.bwa.fa.gz"
+    params:
+        dustmasker_binary = config["dustmasker_binary"]
+    shell:
+        "zcat {input.db_files} | {params.dustmasker_binary} -in - -out - -outfmt fasta -linker 100 -hard_masking -level 16 | gzip > {output.dustmask_db}"
+
+
+rule build_kraken_db:
+    input:
+        taxonomy_file = "final_database/taxonomy.tsv",
+        index_fofn = "final_database/index_fofn",
+        db_files = "dustmasked_db/cmdd.{num}.bwa.fa"
+    output:
+        kraken_db = "kraken_db/kraken_metadb",
+        nuc_a2t = "kraken_db/taxonomy/nucl_gb.accession2taxid",
+        prot_a2t = "kraken_db/taxonomy/prot.accession2taxid",
+        taxdump = "kraken_db/taxonomy/taxdump.tar.gz"
+    params:
+        threads = config["kraken_threads"]
+    shell:
+        "wget -O {output.nuc_a2t}.gz https://ftp.ncbi.nlm.nih.gov/pub/taxonomy/accession2taxid/nucl_gb.accession2taxid.gz && "
+        "gunzip {output.nuc_a2t}.gz && "
+        "wget -O {output.prot_a2t}.gz https://ftp.ncbi.nlm.nih.gov/pub/taxonomy/accession2taxid/prot.accession2taxid.gz && "
+        "gunzip {output.prot_a2t}.gz && "
+        "wget -O {output.taxdump}.gz https://ftp.ncbi.nlm.nih.gov/pub/taxonomy/taxdump.tar.gz && "
+        "tar -zxf {output.taxdump}.gz && "
+        "gunzip {input.db_files}.gz && "
+        "kraken2-build --add-to-library {input.db_files} --db {output.kraken_db} && "
+        "kraken2-build --build --threads {params.threads} --db {output.kraken_db}"

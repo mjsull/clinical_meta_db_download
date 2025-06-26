@@ -1,6 +1,7 @@
 import sys, os
 import gzip
 import pandas as pd
+import lzma
 
 def create_tax_ref(nodes, names):
     name_dict = {}
@@ -44,14 +45,14 @@ def get_phylo_name(node):
     return(taxstring[1:])
 
 
-def process_virus(viral_fasta, virus_accessions, virus_taxids, fasta_outdir, taxfile):
+def process_virus(viral_fasta, viral_faa, virus_taxids, virus_prot_taxids, fasta_outdir, taxfile):
     try:
         os.makedirs(fasta_outdir)
     except FileExistsError:
         pass
     fasta_dict = {}
     tax_id_dict = {}
-    with gzip.open(viral_fasta, 'rt') as f, open(virus_taxids) as taxids:
+    with gzip.open(viral_fasta, 'rt') as f, open(virus_taxids, 'r') as taxids:
         virus_taxids_df = pd.read_csv(taxids, sep="\t", header=None, names=["accession", "tax_id"])
         for line in f:
             if line.startswith(">"):
@@ -80,6 +81,35 @@ def process_virus(viral_fasta, virus_accessions, virus_taxids, fasta_outdir, tax
             if taxname == "missing":
                 taxname = "d__Viruses;missing"
             taxout.write("{}\t{}\t{}\n".format(i, os.path.join(fasta_outdir, i + ".fna"), taxname))
+    with lzma.open(viral_faa, 'rt') as f, open(virus_prot_taxids, 'r') as taxids:
+        virus_taxids_df = pd.read_csv(taxids, sep="\t", header=None, names=["accession", "tax_id"])
+        for line in f:
+            if line.startswith(">"):
+                name = line.strip().lstrip('>')
+                accession = name.split('|')[2]
+                if accession in fasta_dict:
+                    fasta_dict[accession][name] = ""
+                else:
+                    fasta_dict[accession] = {name:""}
+                    normalised_accession = accession.split(".")[0]
+                    if normalised_accession in virus_taxids_df['accession'].values:
+                        taxid = str(virus_taxids_df.loc[virus_taxids_df['accession'] == normalised_accession, 'tax_id'].values[0])
+                    else:
+                        taxid = "missing"
+                    tax_id_dict[accession] = taxid
+            elif line.startswith('--'):
+                pass
+            else:
+                fasta_dict[accession][name] += line.rstrip()
+    with open(taxfile, 'r') as taxout:
+        for i in fasta_dict:
+            with open(os.path.join(fasta_outdir, i + ".faa"), 'w') as o:
+                for j in fasta_dict[i]:
+                    o.write(">{}\n{}\n".format(j, fasta_dict[i][j]))
+            taxname = get_phylo_name(tax_id_dict[i])
+            if taxname == "missing":
+                taxname = "d__Viruses;missing"
+            taxout.write("{}\t{}\t{}\n".format(i, os.path.join(fasta_outdir, i + ".faa"), taxname))
 
 def process_euk(infile, outfile):
     with open(infile) as f, open(outfile, 'w') as o:
@@ -94,6 +124,6 @@ def process_euk(infile, outfile):
 graph, name_dict, prefix_dict = create_tax_ref(snakemake.input.nodes, snakemake.input.names)
 
 if snakemake.params.dataset == "virus":
-    process_virus(snakemake.input.rvdb_fasta, snakemake.input.virus_accessions, snakemake.input.virus_taxids, snakemake.params.virus_dir, snakemake.output.virus_tax)
+    process_virus(snakemake.input.rvdb_fasta, snakemake.input.rvdb_faa, snakemake.input.virus_taxids, snakemake.input.virus_prot_taxids, snakemake.params.virus_dir, snakemake.output.virus_tax)
 elif snakemake.params.dataset == "euk":
     process_euk(snakemake.input.euk_list, snakemake.output.euk_tax)
